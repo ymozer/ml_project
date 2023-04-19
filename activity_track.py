@@ -190,14 +190,57 @@ def key_callback(event):
         key_pressed = '<' + '+'.join(key_pressed_list) + ('+' if len(key_pressed_list) > 0 else '') + event.name + '>'
         line_buffer += key_pressed
         backspace_buffer_len = len(line_buffer)
+    if event.name in ['ctrl', 'shift','alt']:
+        key_pressed_list = list()
+        if keyboard.is_pressed('ctrl') or keyboard.is_pressed('right ctrl'):
+            key_pressed_list.append('ctrl')
+        if keyboard.is_pressed('shift') or keyboard.is_pressed('right shift'):
+            key_pressed_list.append('shift')
+        if keyboard.is_pressed('alt') or keyboard.is_pressed('right alt'):
+            key_pressed_list.append('alt')
+        key_pressed = '<' + '+'.join(key_pressed_list) +  '>'
+        print(key_pressed)
+        line_buffer += key_pressed
+        print(line_buffer)
+        backspace_buffer_len = len(line_buffer)
     elif event.name == 'space':
-        key_pressed = ' '
+        key_pressed = '<SPACE>'
     elif event.name in ['enter', 'tab']:
         key_pressed = '<TAB>' if event.name == 'tab' else '<ENTER>'
         line_buffer += key_pressed
         backspace_buffer_len = len(line_buffer)
         log_it()    # pass event to other handlers
         return True
+    elif event.name == 'delete':
+        key_pressed = '<DEL>'
+        line_buffer += key_pressed
+    elif event.name == 'esc':
+        key_pressed = '<ESC>'
+        line_buffer += key_pressed
+    elif event.name == 'page up':
+        key_pressed = '<PAGE UP>'
+        line_buffer += key_pressed
+    elif event.name == 'page down':
+        key_pressed = '<PAGE DOWN>'
+        line_buffer += key_pressed
+    elif event.name == 'print screen':
+        key_pressed = '<PRINT SCREEN>'
+        line_buffer += key_pressed
+    elif event.name == 'insert':
+        key_pressed = '<INSERT>'
+        line_buffer += key_pressed
+    elif event.name == 'num lock':
+        key_pressed = '<NUM LOCK>'
+        line_buffer += key_pressed
+    elif event.name == 'caps lock':
+        key_pressed = '<CAPS LOCK>'
+        line_buffer += key_pressed
+    elif event.name == 'scroll lock':
+        key_pressed = '<SCROLL LOCK>'
+        line_buffer += key_pressed
+    elif event.name == 'pause':
+        key_pressed = '<PAUSE>'
+        line_buffer += key_pressed
     elif event.name == 'backspace':
         if len(line_buffer) - backspace_buffer_len > 0:
             line_buffer = line_buffer[:-1]               # remove the last character
@@ -217,9 +260,7 @@ def key_callback(event):
         else:
             # unknown character (eg arrow key, shift, ctrl, alt)
             return True  # pass event to other handlers
-
-    # 4. APPEND THE PRESSED KEY TO THE LINE_BUFFER
-    line_buffer += key_pressed
+        line_buffer += key_pressed
 
     # 5. DECIDE ON WHETHER TO LOG CURRENT line_buffer OR NOT:
     if len(line_buffer) >= CHAR_LIMIT:
@@ -230,18 +271,19 @@ def key_callback(event):
 async def mouseEvents():
     global mouse_records, time_logged, window_name # Date_time | window_name | keyboard_input | mouse_input
     with mouse.Events() as events:
-        time.sleep(1)
+        #await asyncio.sleep(1)
         for event in events:
             # x ,y, button, pressed, dx,dy
+            now = datetime.datetime.now()
             if event.__class__.__name__ == str("Click"):
                 with open(os.path.join(full_path, todays_date_hashed + ".csv"), "a", encoding='utf-8') as fp:
-                    fp.write(f"{time_logged},{window_name},CLICK,,{str(event.x)},{str(event.y)},{str(event.button)},{str(event.pressed)},, \n")
+                    fp.write(f"{now},{window_name},CLICK,,{str(event.x)},{str(event.y)},{str(event.button)},{str(event.pressed)},, \n")
             elif event.__class__.__name__ == str("Move"):
                 with open(os.path.join(full_path, todays_date_hashed + ".csv"), "a", encoding='utf-8') as fp:
-                    fp.write(f"{time_logged},{window_name},MOVE,,{str(event.x)},{str(event.y)},,,, \n")
+                    fp.write(f"{now},{window_name},MOVE,,{str(event.x)},{str(event.y)},,,, \n")
             elif event.__class__.__name__ == str("Scroll"):
                 with open(os.path.join(full_path, todays_date_hashed + ".csv"), "a", encoding='utf-8') as fp:
-                    fp.write(f"{time_logged},{window_name},SCROLL,,{str(event.x)},{str(event.y)},,,{str(event.dx)},{str(event.dy)} \n")
+                    fp.write(f"{now},{window_name},SCROLL,,{str(event.x)},{str(event.y)},,,{str(event.dx)},{str(event.dy)} \n")
             else:
                 print('Unknown event {}'.format(event))
                 mouse_records.append((time_logged,window_name, event))
@@ -271,7 +313,7 @@ if __name__ == '__main__':
 
     if not os.path.exists(os.path.join(full_path, todays_date_hashed + ".csv")):
         with open(os.path.join(full_path, todays_date_hashed + ".csv"), "a", encoding='utf-8') as fp:
-            fp.write("DateTime,Window,Keystrokes,EventType,MouseX,MouseY,ButtonType,IsPressed,ScrollDX,ScrollDY\n")
+            fp.write("DateTime,Window,EventType,Keystrokes,MouseX,MouseY,ButtonType,IsPressed,ScrollDX,ScrollDY\n")
     # Disallowing multiple instances
     mutex = win32event.CreateMutex(None, 1, 'mutex_var_qpgy_main')
     if win32api.GetLastError() == winerror.ERROR_ALREADY_EXISTS:
@@ -288,12 +330,10 @@ if __name__ == '__main__':
         print(bcolors.WARNING+"Yazılım çalışıyor...\n"+"Bu yazılımı kapatmak için CTRL+C tuşlarına basınız."+bcolors.ENDC)
         task = asyncio.ensure_future(worker_catch())
         result = loop.run_until_complete(task)
-    except KeyboardInterrupt:
-        if task:
-            print(bcolors.FAIL+'Interrupted, cancelling tasks'+bcolors.ENDC)
-            task.cancel()
-            task.exception()
+        print('Result:', result)
     finally:
+        task.cancel()
+        task.exception()
         loop.stop()
         loop.close()
     
