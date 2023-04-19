@@ -264,6 +264,7 @@ async def worker_catch():
 
 if __name__ == '__main__':
     print(bcolors.OKBLUE+ "Yazılım başlatılıyor..."+ bcolors.ENDC)
+    print(bcolors.FAIL+ "Bu programı kullanırken şifre gibi gizli bilgilerinizi girmeyiniz."+ bcolors.ENDC)
     print("Bu program "+ bcolors.OKGREEN+ os.path.join(full_path, todays_date_hashed  + '.csv'+ bcolors.ENDC) +" konumundaki yere\
         \nbelirtilen isimde bir dosya oluşturacaktır.")
     print(bcolors.BOLD+"yusuf.ozer@adu.edu.tr"+bcolors.ENDC + bcolors.OKBLUE+ " adresinden iletişime geçebilirsiniz."+ bcolors.ENDC)
