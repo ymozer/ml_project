@@ -17,7 +17,7 @@ import asyncio
 import time
 # CONSTANTS
 # this number of characters must be typed for the logger to write the line_buffer:
-CHAR_LIMIT = 20           # a safe margin
+CHAR_LIMIT = 1
 
 # - GLOBAL SCOPE VARIABLES start -
 # general check
@@ -33,7 +33,20 @@ mouse_records=[]
 
 full_path = os.path.dirname(os.path.realpath(sys.argv[0]))
 initial_language = "Turkish"
-df=pd.DataFrame(columns=['time','window_name','key','mouse'])
+todays_date = datetime.datetime.now().strftime('%Y-%b-%d')
+# md5 only for masking dates - it's easily crackable:
+todays_date_hashed = hashlib.md5(bytes(todays_date, 'utf-8')).hexdigest()
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 # - GLOBAL SCOPE VARIABLES end -
 
@@ -69,26 +82,18 @@ upper_case = update_upper_case()
 
 def log_local():
     # Local mode
-    global full_path, line_buffer, backspace_buffer_len, window_name, time_logged, keyboard_output_path,todays_date_hashed
-    
-    todays_date = datetime.datetime.now().strftime('%Y-%b-%d')
-    # md5 only for masking dates - it's easily crackable:
-    todays_date_hashed = hashlib.md5(bytes(todays_date, 'utf-8')).hexdigest()
-    keyboard_output_path=f"{todays_date_hashed}.csv"
+    global full_path, line_buffer, backspace_buffer_len, window_name, time_logged
     try:
-        with open(os.path.join(full_path, todays_date_hashed + ".txt"), "a", encoding='utf-8') as fp:
-            fp.write(line_buffer)
         with open(os.path.join(full_path, todays_date_hashed + ".csv"), "a", encoding='utf-8') as fp:
-            fp.write(f"{time_logged},{window_name},{line_buffer}\n")
-            print((str(time_logged),window_name,line_buffer))
+            fp.write(f"{time_logged},{window_name},KEYPRESS,{line_buffer},,,,,,\n")
     except:
         # if there's a problem with a file size: rename the old one, and continue as normal
         counter = 0
-        while os.path.exists(os.path.join(full_path, todays_date_hashed + "_" + str(counter) + ".txt")):
+        while os.path.exists(os.path.join(full_path, todays_date_hashed + "_" + str(counter) + ".csv")):
             counter += 1
         try:
-            os.rename(os.path.join(full_path, todays_date_hashed + ".txt"),
-                      os.path.join(full_path, todays_date_hashed + "_" + str(counter) + ".txt"))
+            os.rename(os.path.join(full_path, todays_date_hashed + ".csv"),
+                      os.path.join(full_path, todays_date_hashed + "_" + str(counter) + ".csv"))
             window_name = ''
             time_logged = datetime.datetime.now() - datetime.timedelta(seconds=1)
         except Exception as e:
@@ -223,20 +228,20 @@ def key_callback(event):
 
 
 async def mouseEvents():
-    global mouse_records, time_logged, window_name # Date/time | window name | keyboard input | mouse input
+    global mouse_records, time_logged, window_name # Date_time | window_name | keyboard_input | mouse_input
     with mouse.Events() as events:
         time.sleep(1)
         for event in events:
             # x ,y, button, pressed, dx,dy
             if event.__class__.__name__ == str("Click"):
                 with open(os.path.join(full_path, todays_date_hashed + ".csv"), "a", encoding='utf-8') as fp:
-                    fp.write(f"{time_logged},{window_name},{str(event.x)},{str(event.y)},{str(event.button)},{str(event.pressed)},, \n")
+                    fp.write(f"{time_logged},{window_name},CLICK,,{str(event.x)},{str(event.y)},{str(event.button)},{str(event.pressed)},, \n")
             elif event.__class__.__name__ == str("Move"):
                 with open(os.path.join(full_path, todays_date_hashed + ".csv"), "a", encoding='utf-8') as fp:
-                    fp.write(f"{time_logged},{window_name},{str(event.x)},{str(event.y)},,,, \n")
+                    fp.write(f"{time_logged},{window_name},MOVE,,{str(event.x)},{str(event.y)},,,, \n")
             elif event.__class__.__name__ == str("Scroll"):
                 with open(os.path.join(full_path, todays_date_hashed + ".csv"), "a", encoding='utf-8') as fp:
-                    fp.write(f"{time_logged},{window_name},{str(event.x)},{str(event.y)},,,{str(event.dx)},{str(event.dy)} \n")
+                    fp.write(f"{time_logged},{window_name},SCROLL,,{str(event.x)},{str(event.y)},,,{str(event.dx)},{str(event.dy)} \n")
             else:
                 print('Unknown event {}'.format(event))
                 mouse_records.append((time_logged,window_name, event))
@@ -244,20 +249,28 @@ async def mouseEvents():
 async def worker():
     # add other functions here to run them concurrently
     keyboard.hook(key_callback)
-    futures = [await mouseEvents(), keyboard.wait('ctrl+b') ]
+    futures = [await mouseEvents(), keyboard.wait('ctrl+c') ]
     return await asyncio.gather(*futures)
 
 async def worker_catch():
     try:
         return await worker()
     except (asyncio.CancelledError, KeyboardInterrupt):
-        print('Cancelled task')
+        print(bcolors.FAIL+'Görev iptal edildi.\nÇıkış Yapılıyor...'+bcolors.ENDC)
     except Exception as ex:
         print('Exception:', ex)
     return None
 
 
 if __name__ == '__main__':
+    print(bcolors.OKBLUE+ "Yazılım başlatılıyor..."+ bcolors.ENDC)
+    print("Bu program "+ bcolors.OKGREEN+ os.path.join(full_path, todays_date_hashed  + '.csv'+ bcolors.ENDC) +" konumundaki yere\
+        \nbelirtilen isimde bir dosya oluşturacaktır.")
+    print(bcolors.BOLD+"yusuf.ozer@adu.edu.tr"+bcolors.ENDC + bcolors.OKBLUE+ " adresinden iletişime geçebilirsiniz."+ bcolors.ENDC)
+
+    if not os.path.exists(os.path.join(full_path, todays_date_hashed + ".csv")):
+        with open(os.path.join(full_path, todays_date_hashed + ".csv"), "a", encoding='utf-8') as fp:
+            fp.write("DateTime,Window,Keystrokes,EventType,MouseX,MouseY,ButtonType,IsPressed,ScrollDX,ScrollDY\n")
     # Disallowing multiple instances
     mutex = win32event.CreateMutex(None, 1, 'mutex_var_qpgy_main')
     if win32api.GetLastError() == winerror.ERROR_ALREADY_EXISTS:
@@ -265,19 +278,18 @@ if __name__ == '__main__':
         print("Multiple instances are not allowed")
         exit(0)
     hide()
-    add_to_startup()
+    #add_to_startup()
     task = None
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.set_debug(False)
     try:
+        print(bcolors.WARNING+"Yazılım çalışıyor...\n"+"Bu yazılımı kapatmak için CTRL+C tuşlarına basınız."+bcolors.ENDC)
         task = asyncio.ensure_future(worker_catch())
         result = loop.run_until_complete(task)
-
-        print('Result: {}'.format(result))
     except KeyboardInterrupt:
         if task:
-            print('Interrupted, cancelling tasks')
+            print(bcolors.FAIL+'Interrupted, cancelling tasks'+bcolors.ENDC)
             task.cancel()
             task.exception()
     finally:
